@@ -32,7 +32,7 @@ jobs:
           version: latest
 
   release-test-linux:
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-latest
     steps:
       - name: "Check out code"
         uses: actions/checkout@v4
