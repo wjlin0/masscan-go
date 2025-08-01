@@ -1,0 +1,9 @@
+.idea
+dist
+text
+*.exe
+*.pprof
+*.csv
+*.txt
+masscan-go
+!cmd/masscan-go/

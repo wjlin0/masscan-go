@@ -1,0 +1,28 @@
+version: 2
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod tidy
+project_name: masscan-go
+builds:
+  - id: masscan-go-darwin
+    ldflags:
+      - -s -w
+    binary: masscan-go
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/masscan-go/masscan-go.go
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+archives:
+  - formats:
+      - zip
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ if eq .Os "darwin" }}macOS{{ else }}{{ .Os }}{{ end }}_{{ .Arch }}'
+
+
+checksum:
+  name_template: "{{ .ProjectName }}-mac-checksums.txt"
