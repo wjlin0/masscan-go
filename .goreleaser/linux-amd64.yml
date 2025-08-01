@@ -1,3 +1,4 @@
+version: 2
 env:
   - GO111MODULE=on
 before:
@@ -24,14 +25,3 @@ archives:
 
 checksum:
   name_template: "{{ .ProjectName }}-linux-amd64-checksums.txt"
-
-announce:
-  slack:
-    enabled: true
-    channel: '#release'
-    username: GoReleaser
-    message_template: 'New Release: {{ .ProjectName }} {{.Tag}} is published! Check it out at {{ .ReleaseURL }}'
-
-  discord:
-    enabled: true
-    message_template: '**New Release: {{ .ProjectName }} {{.Tag}}** is published! Check it out at {{ .ReleaseURL }}' 
