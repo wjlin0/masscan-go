@@ -92,7 +92,7 @@ EXAMPLES:
 运行 masscan-go 从文件中读取:
   $ sudo masscan-go -list file.txt
 
-  运行 masscan-go 联动 nmap：
+运行 masscan-go 联动 nmap：
   $ # 目前暂不支持，未来会联动
 
 运行 masscan-go 收集端口 并配合 nuclei 进行自动化漏洞扫描:
