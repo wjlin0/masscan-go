@@ -16,6 +16,16 @@ type Target struct {
 	SrcPort int
 }
 
+func ipToInt(ip net.IP) uint32 {
+	ip = ip.To4()
+	return uint32(ip[0])<<24 | uint32(ip[1])<<16 | uint32(ip[2])<<8 | uint32(ip[3])
+}
+
+// intToIP 将uint32转换为net.IP
+func intToIP(n uint32) net.IP {
+	return net.IPv4(byte(n>>24), byte(n>>16), byte(n>>8), byte(n))
+}
+
 // ParseIps 解析目标IP地址或CIDR
 func ParseIps(target []string) ([]net.IP, error) {
 	var targets []string
@@ -25,26 +35,60 @@ func ParseIps(target []string) ([]net.IP, error) {
 		for i := 0; i < len(target); i++ {
 			if strings.Contains(target[i], "-") {
 				ipRange := strings.Split(target[i], "-")
+				if len(ipRange) != 2 {
+					return nil, fmt.Errorf("invalid IP range format: %s", target)
+				}
+				startIP := ipRange[0]
 				endIp := ipRange[1]
-				endIpint, _ := strconv.Atoi(endIp)
-				startIp := strings.Split(ipRange[0], ".")
-				if len(startIp) != 4 {
-					return nil, fmt.Errorf("invalid IP address: %s", target[i])
-				}
-				startIpint, _ := strconv.Atoi(startIp[3])
-				for ; startIpint <= endIpint; startIpint++ {
-					_targets = append(_targets, fmt.Sprintf("%s.%d", strings.Join(startIp[:3], "."), startIpint))
-				}
-				continue
-			}
+				if strings.Contains(endIp, ".") && len(strings.Split(endIp, ".")) == 4 {
+					// 完整IP范围处理
+					start := net.ParseIP(startIP)
+					end := net.ParseIP(endIp)
+					if start == nil || end == nil {
+						return nil, fmt.Errorf("invalid IP address in range: %s", target)
+					}
 
-			if ip, ipnet, err := net.ParseCIDR(target[i]); err == nil {
-				for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); incIP(ip) {
-					_targets = append(_targets, ip.String())
+					start = start.To4()
+					end = end.To4()
+					if start == nil || end == nil {
+						return nil, fmt.Errorf("invalid IPv4 address in range: %s", target)
+					}
+
+					// 将IP转换为整数进行比较
+					startNum := ipToInt(start)
+					endNum := ipToInt(end)
+					if startNum > endNum {
+						return nil, fmt.Errorf("start IP must be less than end IP: %s", target)
+					}
+
+					// 生成范围内的所有IP
+					for current := startNum; current <= endNum; current++ {
+						_targets = append(_targets, intToIP(current).String())
+					}
+				} else {
+					endIpint, _ := strconv.Atoi(endIp)
+					startIp := strings.Split(ipRange[0], ".")
+
+					if len(startIp) != 4 {
+						return nil, fmt.Errorf("invalid IP address: %s", target[i])
+					}
+					startIpint, _ := strconv.Atoi(startIp[3])
+					for ; startIpint <= endIpint; startIpint++ {
+						_targets = append(_targets, fmt.Sprintf("%s.%d", strings.Join(startIp[:3], "."), startIpint))
+					}
+					continue
 				}
-				continue
+
+			} else if strings.Contains(target[i], "/") {
+				if ip, ipnet, err := net.ParseCIDR(target[i]); err == nil {
+					for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); incIP(ip) {
+						_targets = append(_targets, ip.String())
+					}
+					continue
+				}
+			} else {
+				_targets = append(_targets, target[i])
 			}
-			_targets = append(_targets, target[i])
 		}
 		// 去重
 		var targetsMap = make(map[string]struct{})
@@ -55,6 +99,7 @@ func ParseIps(target []string) ([]net.IP, error) {
 		for _target := range targetsMap {
 			_targets = append(_targets, _target)
 		}
+
 		return _targets, nil
 	}
 
@@ -86,7 +131,12 @@ func ParseIps(target []string) ([]net.IP, error) {
 	}
 	var ParseIps []net.IP
 	for _, _t := range targets {
-		ParseIps = append(ParseIps, net.ParseIP(_t))
+		pip := net.ParseIP(_t)
+		if pip == nil {
+			continue
+		}
+
+		ParseIps = append(ParseIps, pip)
 	}
 	return ParseIps, nil
 }

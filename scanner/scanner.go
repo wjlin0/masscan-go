@@ -163,7 +163,6 @@ func (s *Scanner) parseTarget() (map[string]*target.Target, error) {
 	ipList := s.ipList
 	for i := 0; i < len(ipList); i++ {
 		var preferredSrc net.IP
-
 		var err error
 
 		_, _, preferredSrc, err = s.router.Route(ipList[i])
